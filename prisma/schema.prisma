@@ -30,6 +30,7 @@ model classrooms {
   id                    Int                     @id @default(autoincrement()) @db.SmallInt
   name                  String                  @db.VarChar(20)
   is_blocked            Boolean?                @default(false)
+  access_logs           access_logs[]
   sensors               sensors[]
   teacher_subject_group teacher_subject_group[]
 }
@@ -87,6 +88,7 @@ model sensors {
   classroom_id Int?          @db.SmallInt
   is_active    Boolean?      @default(true)
   ip_address   String?       @db.VarChar(20)
+  access_logs  access_logs[]
   attendance   attendance[]
   classrooms   classrooms?   @relation(fields: [classroom_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sensors_ibfk_1")
   work_shifts  work_shifts[]
@@ -136,20 +138,25 @@ model teacher_subject_group {
 }
 
 model users {
-  id                    Int                     @id @default(autoincrement())
-  first_name            String                  @db.VarChar(50)
-  last_name             String                  @db.VarChar(50)
-  email                 String                  @unique(map: "email") @db.VarChar(100)
-  password              String                  @db.VarChar(255)
-  role_id               Int                     @db.TinyInt
-  is_active             Boolean?                @default(true)
-  attendance            attendance[]
-  grades                grades[]
-  rfid_cards            rfid_cards[]
-  student_group         student_group[]
-  teacher_subject_group teacher_subject_group[]
-  roles                 roles                   @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_ibfk_1")
-  work_shifts           work_shifts[]
+  id                        Int                     @id @default(autoincrement())
+  first_name                String                  @db.VarChar(50)
+  last_name                 String                  @db.VarChar(50)
+  email                     String                  @unique(map: "email") @db.VarChar(100)
+  password                  String                  @db.VarChar(255)
+  role_id                   Int                     @db.TinyInt
+  is_active                 Boolean?                @default(true)
+  verification_code         String?                 @db.VarChar(255)
+  verification_code_expires DateTime?               @db.DateTime(0)
+  reset_password_token      String?                 @db.VarChar(255)
+  reset_password_expires    DateTime?               @db.DateTime(0)
+  access_logs               access_logs[]
+  attendance                attendance[]
+  grades                    grades[]
+  rfid_cards                rfid_cards[]
+  student_group             student_group[]
+  teacher_subject_group     teacher_subject_group[]
+  roles                     roles                   @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "users_ibfk_1")
+  work_shifts               work_shifts[]
 
   @@index([role_id], map: "role_id")
 }
@@ -164,6 +171,21 @@ model work_shifts {
   users          users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "work_shifts_ibfk_1")
   sensors        sensors?  @relation(fields: [sensor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "work_shifts_ibfk_2")
 
+  @@index([sensor_id], map: "sensor_id")
+  @@index([user_id], map: "user_id")
+}
+
+model access_logs {
+  id           Int        @id @default(autoincrement())
+  user_id      Int
+  classroom_id Int        @db.SmallInt
+  sensor_id    Int        @db.SmallInt
+  access_time  DateTime   @default(now()) @db.DateTime(0)
+  users        users      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "access_logs_ibfk_1")
+  classrooms   classrooms @relation(fields: [classroom_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "access_logs_ibfk_2")
+  sensors      sensors    @relation(fields: [sensor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "access_logs_ibfk_3")
+
+  @@index([classroom_id], map: "classroom_id")
   @@index([sensor_id], map: "sensor_id")
   @@index([user_id], map: "user_id")
 }
