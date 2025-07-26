@@ -6,13 +6,23 @@ const router = express.Router();
 
 router.post(
   "/check-in",
-  [body("user_id").isInt(), body("sensor_id").isInt()],
+  [
+    body("uid").notEmpty().withMessage("El UID es requerido"),
+    body("sensor_id")
+      .isInt()
+      .withMessage("El sensor_id debe ser un número entero"),
+  ],
   work_shiftsController.checkIn
 );
 
 router.post(
   "/check-out",
-  [body("user_id").isInt(), body("sensor_id").isInt()],
+  [
+    body("uid").notEmpty().withMessage("El UID es requerido"),
+    body("sensor_id")
+      .isInt()
+      .withMessage("El sensor_id debe ser un número entero"),
+  ],
   work_shiftsController.checkOut
 );
 

@@ -4,7 +4,18 @@ const prisma = new PrismaClient();
 const attendanceController = {
   checkIn: async (req, res) => {
     try {
-      const { user_id, sensor_id } = req.body;
+      const { uid, sensor_id } = req.body;
+
+      // Busca el user_id a partir del uid
+      const card = await prisma.rfid_cards.findUnique({ where: { uid } });
+      if (!card) {
+        return res.status(404).json({
+          status: "error",
+          data: {},
+          msg: "Tarjeta no registrada",
+        });
+      }
+      const user_id = card.user_id;
       const now = new Date();
       now.setHours(now.getHours() - 6);
       const today = new Date();
