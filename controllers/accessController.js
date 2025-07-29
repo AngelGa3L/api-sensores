@@ -40,14 +40,15 @@ const accessController = {
           .status(403)
           .json({ msg: "Salón bloqueado, acceso denegado" });
       }
-
+      const now = new Date();
+      now.setHours(now.getHours() - 6);
       // 3. Registra el acceso
       const accessLog = await prisma.access_logs.create({
         data: {
           user_id,
           classroom_id: sensor.classroom_id,
           sensor_id,
-          access_time: new Date(),
+          access_time: now,
         },
       });
 

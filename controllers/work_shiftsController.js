@@ -1,5 +1,6 @@
 import { PrismaClient } from "../generated/prisma/index.js";
 import { validationResult } from "express-validator";
+import { DateTime } from "luxon";
 
 const prisma = new PrismaClient();
 
@@ -26,10 +27,8 @@ const work_shiftsController = {
       });
     }
     const user_id = card.user_id;
-    const now = new Date();
-    now.setHours(now.getHours() - 6);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = DateTime.now().toUTC().minus({ hours: 6 }).toJSDate();
+    const today = DateTime.now().toUTC().startOf("day").toJSDate();
 
     try {
       const user = await prisma.users.findUnique({

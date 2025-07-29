@@ -165,8 +165,8 @@ model work_shifts {
   id             Int       @id @default(autoincrement())
   user_id        Int
   date           DateTime  @db.Date
-  check_in_time  DateTime  @db.Time(0)
-  check_out_time DateTime? @db.Time(0)
+  check_in_time  DateTime? @db.DateTime(0)
+  check_out_time DateTime? @db.DateTime(0)
   sensor_id      Int?      @db.SmallInt
   users          users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "work_shifts_ibfk_1")
   sensors        sensors?  @relation(fields: [sensor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "work_shifts_ibfk_2")
