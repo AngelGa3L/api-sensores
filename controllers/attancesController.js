@@ -75,13 +75,26 @@ const attendanceController = {
         });
       }
 
+      const classStartTime = new Date(now);
+      classStartTime.setHours(
+        new Date(currentClass.schedules.start_time).getHours(),
+        new Date(currentClass.schedules.start_time).getMinutes(),
+        0,
+        0
+      );
+
+      const timeDifferenceMs = now.getTime() - classStartTime.getTime();
+      const timeDifferenceMinutes = timeDifferenceMs / (1000 * 60);
+
+      const status = timeDifferenceMinutes > 15 ? "late" : "present";
+      
       const attendance = await prisma.attendance.create({
         data: {
           user_id,
           subject_id: currentClass.subject_id,
           date: today,
           check_in_time: now,
-          status: "present",
+          status: status,
           sensor_id,
         },
       });
