@@ -44,11 +44,11 @@ const work_shiftsController = {
         });
       }
 
-      if (user.roles.name !== "teacher") {
+      if (user.roles.name === "student") {
         return res.status(403).json({
           status: "error",
           data: {},
-          msg: "Solo los maestros pueden registrar turnos",
+          msg: "Los estudiantes no pueden registrar turnos",
         });
       }
 
