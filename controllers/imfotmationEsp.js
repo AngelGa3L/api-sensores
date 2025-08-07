@@ -23,6 +23,7 @@ const getConfig = async (req, res) => {
     case "attendance":
       action_url =
         "https://api.smartentry.space/api/sensors/attendance/check-in";
+      break;
     case "access":
       action_url = "https://api.smartentry.space/api/sensors/access/check-in";
       break;
