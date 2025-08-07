@@ -18,8 +18,9 @@ const attendanceController = {
       const user_id = card.user_id;
       const now = new Date();
       now.setHours(now.getHours() - 6);
+      
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setUTCHours(0, 0, 0, 0); 
 
       const studentGroup = await prisma.student_group.findFirst({
         where: { student_id: user_id },
@@ -74,14 +75,55 @@ const attendanceController = {
           msg: "No hay clase para este alumno en este momento",
         });
       }
+      
+      const classStartTime = new Date(now);
+      classStartTime.setHours(
+        new Date(currentClass.schedules.start_time).getHours(),
+        new Date(currentClass.schedules.start_time).getMinutes(),
+        0,
+        0
+      );
+      
+      const classEndTime = new Date(now);
+      classEndTime.setHours(
+        new Date(currentClass.schedules.end_time).getHours(),
+        new Date(currentClass.schedules.end_time).getMinutes(),
+        59,
+        999
+      );
+      
+      const existingAttendance = await prisma.attendance.findFirst({
+        where: {
+          user_id,
+          subject_id: currentClass.subject_id,
+          date: today,
+          check_in_time: {
+            gte: classStartTime,
+            lte: classEndTime,
+          },
+        },
+      });
+      
+      if (existingAttendance) {
+        return res.status(409).json({
+          status: "error",
+          data: { existing_attendance: existingAttendance },
+          msg: "Ya se registró asistencia para esta hora de clase",
+        });
+      }
 
+      const timeDifferenceMs = now.getTime() - classStartTime.getTime();
+      const timeDifferenceMinutes = timeDifferenceMs / (1000 * 60);
+
+      const status = timeDifferenceMinutes > 15 ? "late" : "present";
+      
       const attendance = await prisma.attendance.create({
         data: {
           user_id,
           subject_id: currentClass.subject_id,
           date: today,
           check_in_time: now,
-          status: "present",
+          status: status,
           sensor_id,
         },
       });
