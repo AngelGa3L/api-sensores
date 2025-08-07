@@ -9,11 +9,19 @@ const attendanceController = {
       // Busca el user_id a partir del uid
       const card = await prisma.rfid_cards.findUnique({ where: { uid } });
       if (!card) {
-        return res.status(404).json({
+        const responseData = {
           status: "error",
           data: {},
           msg: "Tarjeta no registrada",
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
         });
+        return res.status(404).json(responseData);
       }
       const user_id = card.user_id;
       const now = new Date();
@@ -26,9 +34,19 @@ const attendanceController = {
         where: { student_id: user_id },
       });
       if (!studentGroup) {
-        return res
-          .status(404)
-          .json({ msg: "El alumno no tiene grupo asignado" });
+        const responseData = {
+          status: "error",
+          data: {},
+          msg: "El alumno no tiene grupo asignado"
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
+        });
+        return res.status(404).json(responseData);
       }
 
       const weekday = [
@@ -69,11 +87,19 @@ const attendanceController = {
       });
 
       if (!currentClass) {
-        return res.status(404).json({
+        const responseData = {
           status: "error",
           data: {},
-          msg: "No hay clase para este alumno en este momento",
+          msg: "No hay clase para este usuario en este momento",
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
         });
+        return res.status(404).json(responseData);
       }
       
       const classStartTime = new Date(now);
@@ -105,11 +131,19 @@ const attendanceController = {
       });
       
       if (existingAttendance) {
-        return res.status(409).json({
+        const responseData = {
           status: "error",
           data: { existing_attendance: existingAttendance },
           msg: "Ya se registró asistencia para esta hora de clase",
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
         });
+        return res.status(409).json(responseData);
       }
 
       const timeDifferenceMs = now.getTime() - classStartTime.getTime();
@@ -128,13 +162,29 @@ const attendanceController = {
         },
       });
 
-      res.json({
-        status: "success",
-        data: { attendance },
-        msg: "Asistencia registrada",
-      });
+    const responseData = {
+      status: "success",
+      data: { attendance },
+      msg: "Asistencia registrada",
+    };
+    await prisma.sensor_responses.create({
+      data: {
+        sensor_id: attendance.sensor_id,
+        response: responseData,
+        created_at: new Date()
+      }
+    });
+    res.json(responseData);
     } catch (error) {
-      res.status(500).json({ status: "error", data: {}, msg: error.message });
+      const responseData = { status: "error", data: {}, msg: error.message };
+      await prisma.sensor_responses.create({
+        data: {
+          sensor_id,
+          response: responseData,
+          created_at: new Date()
+        }
+      });
+      res.status(500).json(responseData);
     }
   },
 };

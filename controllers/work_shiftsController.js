@@ -20,11 +20,19 @@ const work_shiftsController = {
     // Busca el user_id a partir del uid
     const card = await prisma.rfid_cards.findUnique({ where: { uid } });
     if (!card) {
-      return res.status(404).json({
+      const responseData = {
         status: "error",
         data: {},
         msg: "Tarjeta no registrada",
+      };
+      await prisma.sensor_responses.create({
+        data: {
+          sensor_id,
+          response: responseData,
+          created_at: new Date()
+        }
       });
+      return res.status(404).json(responseData);
     }
     const user_id = card.user_id;
     const now = DateTime.now().toUTC().minus({ hours: 6 }).toJSDate();
@@ -37,19 +45,35 @@ const work_shiftsController = {
       });
 
       if (!user) {
-        return res.status(404).json({
+        const responseData = {
           status: "error",
           data: {},
           msg: "Usuario no encontrado",
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
         });
+        return res.status(404).json(responseData);
       }
 
       if (user.roles.name === "student") {
-        return res.status(403).json({
+        const responseData = {
           status: "error",
           data: {},
           msg: "Los estudiantes no pueden registrar turnos",
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
         });
+        return res.status(403).json(responseData);
       }
 
       let shift = await prisma.work_shifts.findFirst({
@@ -60,11 +84,19 @@ const work_shiftsController = {
       });
 
       if (shift) {
-        return res.status(400).json({
+        const responseData = {
           status: "error",
           data: {},
           msg: "Ya existe un registro de entrada hoy",
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
         });
+        return res.status(400).json(responseData);
       }
 
       shift = await prisma.work_shifts.create({
@@ -76,17 +108,33 @@ const work_shiftsController = {
         },
       });
 
-      return res.json({
+      const responseData = {
         status: "success",
         data: { shift },
         msg: "Entrada registrada",
+      };
+      await prisma.sensor_responses.create({
+        data: {
+          sensor_id: shift.sensor_id,
+          response: responseData,
+          created_at: new Date()
+        }
       });
+      return res.json(responseData);
     } catch (error) {
-      return res.status(500).json({
+      const responseData = {
         status: "error",
         data: {},
         msg: error.message,
+      };
+      await prisma.sensor_responses.create({
+        data: {
+          sensor_id,
+          response: responseData,
+          created_at: new Date()
+        }
       });
+      return res.status(500).json(responseData);
     }
   },
 
@@ -97,11 +145,19 @@ const work_shiftsController = {
       // Busca el user_id a partir del uid
       const card = await prisma.rfid_cards.findUnique({ where: { uid } });
       if (!card) {
-        return res.status(404).json({
+        const responseData = {
           status: "error",
           data: {},
           msg: "Tarjeta no registrada",
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
         });
+        return res.status(404).json(responseData);
       }
       const user_id = card.user_id;
       const now = new Date();
@@ -121,29 +177,53 @@ const work_shiftsController = {
       });
 
       if (!shift) {
-        return res.status(404).json({
+        const responseData = {
           status: "error",
           data: {},
           msg: "No se encontró un turno abierto para salida",
+        };
+        await prisma.sensor_responses.create({
+          data: {
+            sensor_id,
+            response: responseData,
+            created_at: new Date()
+          }
         });
+        return res.status(404).json(responseData);
       }
       const updatedShift = await prisma.work_shifts.update({
         where: { id: shift.id },
         data: { check_out_time: now },
       });
 
-      res.json({
+      const responseData = {
         status: "success",
         data: { shift: updatedShift },
         msg: "Salida registrada",
+      };
+      await prisma.sensor_responses.create({
+        data: {
+          sensor_id: updatedShift.sensor_id,
+          response: responseData,
+          created_at: new Date()
+        }
       });
+      res.json(responseData);
     } catch (error) {
-      res.status(500).json({
+      const responseData = {
         status: "error",
         data: {},
         msg: "Error al registrar salida",
         error: error.message,
+      };
+      await prisma.sensor_responses.create({
+        data: {
+          sensor_id,
+          response: responseData,
+          created_at: new Date()
+        }
       });
+      res.status(500).json(responseData);
     }
   },
 };
