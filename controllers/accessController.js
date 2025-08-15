@@ -15,14 +15,11 @@ const accessController = {
           msg: "Tarjeta no registrada",
         };
         await prisma.sensor_responses.create({
-          data: {
-            sensor_id,
-            response: responseData,
-            created_at: new Date(),
-          },
+          data: { sensor_id, response: responseData, created_at: new Date() },
         });
         return res.status(404).json(responseData);
       }
+
       const user_id = card.user_id;
 
       // 1. Verifica usuario activo
@@ -34,11 +31,7 @@ const accessController = {
           msg: "Usuario desactivado, acceso denegado",
         };
         await prisma.sensor_responses.create({
-          data: {
-            sensor_id,
-            response: responseData,
-            created_at: new Date(),
-          },
+          data: { sensor_id, response: responseData, created_at: new Date() },
         });
         return res.status(403).json(responseData);
       }
@@ -46,8 +39,8 @@ const accessController = {
       // 2. Verifica sensor y salón activos
       const sensor = await prisma.sensors.findUnique({
         where: { id: sensor_id },
-        include: { classrooms: true },
       });
+
       if (!sensor || !sensor.is_active) {
         const responseData = {
           status: "error",
@@ -55,31 +48,40 @@ const accessController = {
           msg: "Sensor desactivado, acceso denegado",
         };
         await prisma.sensor_responses.create({
-          data: {
-            sensor_id,
-            response: responseData,
-            created_at: new Date(),
-          },
+          data: { sensor_id, response: responseData, created_at: new Date() },
         });
         return res.status(403).json(responseData);
       }
-      if (!sensor.classrooms || sensor.classrooms.is_blocked) {
+
+      if (!sensor.classroom_id) {
+        const responseData = {
+          status: "error",
+          data: {},
+          msg: "Sensor no asignado a ningún salón",
+        };
+        await prisma.sensor_responses.create({
+          data: { sensor_id, response: responseData, created_at: new Date() },
+        });
+        return res.status(400).json(responseData);
+      }
+
+      const classroom = await prisma.classrooms.findUnique({
+        where: { id: sensor.classroom_id },
+      });
+
+      if (!classroom || classroom.is_blocked) {
         const responseData = {
           status: "error",
           data: {},
           msg: "Salón bloqueado, acceso denegado",
         };
         await prisma.sensor_responses.create({
-          data: {
-            sensor_id,
-            response: responseData,
-            created_at: new Date(),
-          },
+          data: { sensor_id, response: responseData, created_at: new Date() },
         });
         return res.status(403).json(responseData);
       }
-      const now = new Date();
-      now.setHours(now.getHours() - 6);
+
+      // 3. Verifica acceso restringido por usuario
       const restricted = await prisma.access_restrictions.findFirst({
         where: { user_id, classroom_id: sensor.classroom_id },
       });
@@ -95,7 +97,11 @@ const accessController = {
         });
         return res.status(403).json(responseData);
       }
-      // 3. Registra el acceso
+
+      // 4. Registra el acceso
+      const now = new Date();
+      now.setHours(now.getHours() - 6); // Ajuste de zona horaria si es necesario
+
       const accessLog = await prisma.access_logs.create({
         data: {
           user_id,
@@ -111,13 +117,11 @@ const accessController = {
         msg: "Acceso registrado",
       };
       await prisma.sensor_responses.create({
-        data: {
-          sensor_id: accessLog.sensor_id,
-          response: responseData,
-          created_at: new Date(),
-        },
+        data: { sensor_id, response: responseData, created_at: new Date() },
       });
-      res.json(responseData);
+
+      return res.json(responseData);
+
     } catch (error) {
       const responseData = {
         status: "error",
@@ -125,13 +129,9 @@ const accessController = {
         msg: error.message,
       };
       await prisma.sensor_responses.create({
-        data: {
-          sensor_id,
-          response: responseData,
-          created_at: new Date(),
-        },
+        data: { sensor_id: req.body.sensor_id, response: responseData, created_at: new Date() },
       });
-      res.status(500).json(responseData);
+      return res.status(500).json(responseData);
     }
   },
 };
