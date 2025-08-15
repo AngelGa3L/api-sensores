@@ -18,8 +18,8 @@ const accessController = {
           data: {
             sensor_id,
             response: responseData,
-            created_at: new Date()
-          }
+            created_at: new Date(),
+          },
         });
         return res.status(404).json(responseData);
       }
@@ -37,8 +37,8 @@ const accessController = {
           data: {
             sensor_id,
             response: responseData,
-            created_at: new Date()
-          }
+            created_at: new Date(),
+          },
         });
         return res.status(403).json(responseData);
       }
@@ -58,8 +58,8 @@ const accessController = {
           data: {
             sensor_id,
             response: responseData,
-            created_at: new Date()
-          }
+            created_at: new Date(),
+          },
         });
         return res.status(403).json(responseData);
       }
@@ -73,13 +73,28 @@ const accessController = {
           data: {
             sensor_id,
             response: responseData,
-            created_at: new Date()
-          }
+            created_at: new Date(),
+          },
         });
         return res.status(403).json(responseData);
       }
       const now = new Date();
       now.setHours(now.getHours() - 6);
+      const restricted = await prisma.access_restrictions.findFirst({
+        where: { user_id, classroom_id: sensor.classroom_id },
+      });
+
+      if (restricted) {
+        const responseData = {
+          status: "error",
+          data: {},
+          msg: "Acceso denegado a este usuario",
+        };
+        await prisma.sensor_responses.create({
+          data: { sensor_id, response: responseData, created_at: new Date() },
+        });
+        return res.status(403).json(responseData);
+      }
       // 3. Registra el acceso
       const accessLog = await prisma.access_logs.create({
         data: {
@@ -93,14 +108,14 @@ const accessController = {
       const responseData = {
         status: "success",
         data: { accessLog },
-        msg: "Acceso registrado"
+        msg: "Acceso registrado",
       };
       await prisma.sensor_responses.create({
         data: {
           sensor_id: accessLog.sensor_id,
           response: responseData,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       });
       res.json(responseData);
     } catch (error) {
@@ -113,8 +128,8 @@ const accessController = {
         data: {
           sensor_id,
           response: responseData,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       });
       res.status(500).json(responseData);
     }
