@@ -4,6 +4,9 @@ import work_shiftRoutes from "./routes/work_shiftRoutes.js";
 import attendanceController from "./routes/attendaceRoutes.js";
 import accessController from "./routes/accessRotes.js";
 import informationEspRouter from "./routes/informationEsp.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 const port = 3000;

@@ -31,6 +31,7 @@ model classrooms {
   name                  String                  @db.VarChar(20)
   is_blocked            Boolean?                @default(false)
   access_logs           access_logs[]
+  access_restrictions   access_restrictions[]
   sensors               sensors[]
   teacher_subject_group teacher_subject_group[]
 }
@@ -81,17 +82,18 @@ model schedules {
 }
 
 model sensors {
-  id           Int           @id @default(autoincrement()) @db.SmallInt
-  name         String        @db.VarChar(50)
-  esp32_code   String?       @unique(map: "esp32_code") @db.VarChar(30)
-  type         sensors_type?
-  classroom_id Int?          @db.SmallInt
-  is_active    Boolean?      @default(true)
-  ip_address   String?       @db.VarChar(20)
-  access_logs  access_logs[]
-  attendance   attendance[]
-  classrooms   classrooms?   @relation(fields: [classroom_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sensors_ibfk_1")
-  work_shifts  work_shifts[]
+  id               Int                @id @default(autoincrement()) @db.SmallInt
+  name             String             @db.VarChar(50)
+  esp32_code       String?            @unique(map: "esp32_code") @db.VarChar(30)
+  type             sensors_type
+  classroom_id     Int?               @db.SmallInt
+  is_active        Boolean?           @default(true)
+  ip_address       String?            @db.VarChar(20)
+  access_logs      access_logs[]
+  attendance       attendance[]
+  sensor_responses sensor_responses[]
+  classrooms       classrooms?        @relation(fields: [classroom_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sensors_ibfk_1")
+  work_shifts      work_shifts[]
 
   @@index([classroom_id], map: "classroom_id")
 }
@@ -150,6 +152,7 @@ model users {
   reset_password_token      String?                 @db.VarChar(255)
   reset_password_expires    DateTime?               @db.DateTime(0)
   access_logs               access_logs[]
+  access_restrictions       access_restrictions[]
   attendance                attendance[]
   grades                    grades[]
   rfid_cards                rfid_cards[]
@@ -190,6 +193,28 @@ model access_logs {
   @@index([user_id], map: "user_id")
 }
 
+model sensor_responses {
+  id         Int       @id @default(autoincrement())
+  sensor_id  Int       @db.SmallInt
+  response   Json
+  created_at DateTime? @default(now()) @db.DateTime(0)
+  sensors    sensors   @relation(fields: [sensor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sensor_responses_ibfk_1")
+
+  @@index([sensor_id], map: "sensor_id")
+}
+
+model access_restrictions {
+  id           Int        @id @default(autoincrement())
+  user_id      Int
+  classroom_id Int        @db.SmallInt
+  created_at   DateTime?  @default(now()) @db.DateTime(0)
+  users        users      @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "access_restrictions_ibfk_1")
+  classrooms   classrooms @relation(fields: [classroom_id], references: [id], onDelete: Cascade, map: "access_restrictions_ibfk_2")
+
+  @@unique([user_id, classroom_id], map: "user_classroom_unique")
+  @@index([classroom_id], map: "classroom_id")
+}
+
 enum schedules_weekday {
   Monday
   Tuesday
@@ -204,14 +229,15 @@ enum groups_grade {
   High_School       @map("High School")
 }
 
-enum sensors_type {
-  access
-  attendance
-  other
-}
-
 enum attendance_status {
   present
   late
   absent
+}
+
+enum sensors_type {
+  attendance
+  access
+  work_entry
+  work_out
 }
